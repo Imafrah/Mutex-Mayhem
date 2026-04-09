@@ -26,7 +26,7 @@ export default function App() {
           </div>
           
           <h1 className="text-7xl font-black tracking-tighter uppercase italic font-['Bebas_Neue']">
-            Vinyl <span className="text-[#e8253a]">Leaderboard</span>
+            HackBoard <span className="text-[#e8253a]">AI</span>
           </h1>
           <p className="text-[#d4cfc4] text-xl font-['Space_Mono'] tracking-widest uppercase opacity-60">
             Hackathon Live Scoring System
@@ -35,26 +35,26 @@ export default function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16">
           <a 
-            href="/vinyl.html?view=participant" 
+            href="/participant.html" 
             className="group relative p-10 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#e8253a] transition-all duration-500 rounded-xl overflow-hidden text-left"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-[#e8253a] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
             <PlayCircle className="w-14 h-14 mb-6 text-[#e8253a] group-hover:scale-110 transition-transform duration-500" />
             <h2 className="text-3xl font-bold mb-3 font-['Bebas_Neue'] tracking-wider">Audience View</h2>
             <p className="text-[#d4cfc4] text-sm font-['DM_Sans'] leading-relaxed">
-              Real-time rankings, team cards, and live analytics for participants and judges.
+              Real-time rankings, team cards, live analytics, and voting for participants.
             </p>
           </a>
 
           <a 
-            href="/vinyl.html?view=admin" 
+            href="/admin.html" 
             className="group relative p-10 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#f5c842] transition-all duration-500 rounded-xl overflow-hidden text-left"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-[#f5c842] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
             <LayoutDashboard className="w-14 h-14 mb-6 text-[#f5c842] group-hover:scale-110 transition-transform duration-500" />
             <h2 className="text-3xl font-bold mb-3 font-['Bebas_Neue'] tracking-wider">Admin Console</h2>
             <p className="text-[#d4cfc4] text-sm font-['DM_Sans'] leading-relaxed">
-              Manage scores, trigger multipliers, and announce the final winner.
+              Manage scores, set round timers, trigger multipliers, and announce the winner.
             </p>
           </a>
         </div>
@@ -62,7 +62,7 @@ export default function App() {
         <div className="pt-16 border-t border-[#2a2a2a] flex items-center justify-center gap-4 text-[#d4cfc4] text-xs font-['Space_Mono'] tracking-[0.2em] uppercase opacity-40">
           <span>Est. 2026</span>
           <span className="w-1.5 h-1.5 bg-[#e8253a] rounded-full"></span>
-          <span>Project Turntable</span>
+          <span>HackBoard AI</span>
         </div>
       </div>
 
