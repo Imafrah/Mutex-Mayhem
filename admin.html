@@ -185,7 +185,11 @@
               <label>R2 END</label>
               <input class="timer-input" id="r2-end" type="datetime-local">
             </div>
-            <button class="btn-push" onclick="pushTimers()" style="margin-top:8px">SET ROUND TIMERS</button>
+            <button class="btn-push" onclick="window.pushTimers()" style="margin-top:8px">SET ROUND TIMERS</button>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <button class="btn-push" onclick="window.stopTimers()" style="margin-top:0; background: var(--gray3);">STOP TIMERS</button>
+              <button class="btn-push" onclick="window.resetTimers()" style="margin-top:0; background: var(--red-dark);">RESET</button>
+            </div>
           </div>
 
           <!-- MULTIPLIERS -->
@@ -305,7 +309,7 @@
     }); // end DOMContentLoaded
 
     // ─── ADMIN: SCORE TABLE ──────────────────────────────────────
-    function buildScoreTable() {
+    window.buildScoreTable = function() {
       const teams = HB.getTeams();
       const tb = document.getElementById('score-table');
       if (!tb) return;
@@ -328,7 +332,7 @@
             <td><input class="score-input" id="r1-${t.id}" type="number" min="0" max="500" value="${t.round1}"></td>
             <td><input class="score-input" id="r2-${t.id}" type="number" min="0" max="500" value="${t.round2}"></td>
             <td class="total-cell" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--cream)">${HB.totalScore(t)}</td>
-            <td><button onclick="deleteTeam('${t.id}')" style="background:none;border:1px solid var(--gray3);color:var(--red);padding:2px 8px;border-radius:3px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px">✕</button></td>
+            <td><button onclick="window.deleteTeam('${t.id}')" style="background:none;border:1px solid var(--gray3);color:var(--red);padding:2px 8px;border-radius:3px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px">✕</button></td>
           </tr>`;
         });
         tb.innerHTML = html;
@@ -353,21 +357,21 @@
           if (totalCell) totalCell.textContent = HB.totalScore(t);
         });
       }
-    }
+    };
 
     // ─── ADMIN: PUSH SCORES ──────────────────────────────────────
-    async function pushScores() {
+    window.pushScores = async function() {
       const btn = document.getElementById('btn-push-scores');
       btn.textContent = 'PUSHING...'; btn.disabled = true;
       try {
         const teams = HB.getTeams();
-        const batch = db.batch();
+        const batch = window.db.batch();
         teams.forEach(t => {
           const r1 = parseFloat(document.getElementById(`r1-${t.id}`)?.value) || 0;
           const r2 = parseFloat(document.getElementById(`r2-${t.id}`)?.value) || 0;
           const total = Math.round((r1 + r2) * HB.getMultiplier());
           const newBpm = 60 + ((r1 + r2) * 0.3);
-          batch.update(db.collection('teams').doc(t.id), { round1: r1, round2: r2, score: total, bpm: newBpm });
+          batch.update(window.db.collection('teams').doc(t.id), { round1: r1, round2: r2, score: total, bpm: newBpm });
         });
         await batch.commit();
         btn.textContent = 'PUSHED!'; btn.style.background = '#1D9E75';
@@ -376,17 +380,17 @@
         btn.textContent = 'ERROR!'; btn.style.background = '#b01c2c';
       }
       setTimeout(() => { btn.textContent = 'PUSH LIVE SCORES'; btn.style.background = ''; btn.disabled = false; }, 1500);
-    }
+    };
 
     // ─── ADMIN: DELETE TEAM ──────────────────────────────────────
-    async function deleteTeam(teamId) {
+    window.deleteTeam = async function(teamId) {
       if (!confirm('Delete this team permanently?')) return;
-      try { await db.collection('teams').doc(teamId).delete(); }
+      try { await window.db.collection('teams').doc(teamId).delete(); }
       catch (err) { console.error('Delete error:', err); }
-    }
+    };
 
     // ─── ADMIN: ADD TEAM ──────────────────────────────────────────
-    async function addTeam() {
+    window.addTeam = async function() {
       const nameVal = document.getElementById('new-team-name').value.trim();
       const genreVal = document.getElementById('new-team-genre').value.trim();
       const membersVal = document.getElementById('new-team-members').value.trim();
@@ -397,7 +401,7 @@
       const members = membersVal ? membersVal.split(',').map(m => m.trim()).filter(Boolean) : [];
 
       try {
-        await db.collection('teams').doc().set({
+        await window.db.collection('teams').doc().set({
           name: nameVal, project: '', color, genre: genreVal || 'Unclassified',
           members, desc: '', badges: [], bpm: 80, score: 0, votes: 0, round1: 0, round2: 0
         });
@@ -405,81 +409,81 @@
         document.getElementById('new-team-genre').value = '';
         document.getElementById('new-team-members').value = '';
       } catch (err) { console.error('Add team error:', err); alert('Failed to add team'); }
-    }
+    };
 
     // ─── ADMIN: MULTIPLIER ───────────────────────────────────────
-    async function triggerMultiplier(val, name) {
+    window.triggerMultiplier = async function(val, name) {
       try {
-        await db.collection('event').doc('current').set({
+        await window.db.collection('event').doc('current').set({
           multiplier: val, multiplierName: name,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch (err) { console.error(err); }
-    }
+    };
 
     // ─── ADMIN: BADGES ───────────────────────────────────────────
-    async function toggleBadge(key) {
+    window.toggleBadge = async function(key) {
       const id = document.getElementById('badge-team-select').value;
       const t = HB.getTeams().find(x => x.id === id);
       if (!t) return;
       const newBadges = t.badges.includes(key)
         ? t.badges.filter(b => b !== key) : [...t.badges, key];
-      try { await db.collection('teams').doc(id).update({ badges: newBadges }); }
+      try { await window.db.collection('teams').doc(id).update({ badges: newBadges }); }
       catch (err) { console.error(err); }
-      updateBadgeButtons({ ...t, badges: newBadges });
-    }
+      window.updateBadgeButtons({ ...t, badges: newBadges });
+    };
 
-    function updateBadgeButtons(t) {
+    window.updateBadgeButtons = function(t) {
       document.querySelectorAll('.badge-toggle-btn').forEach(btn => {
         const key = btn.getAttribute('onclick').match(/'(\w+)'/)[1];
         btn.classList.toggle('on', t.badges.includes(key));
       });
       document.getElementById('badge-status').textContent =
         t.badges.length ? `${t.name}: ${t.badges.map(b => HB.BADGE_NAMES[b]).join(', ')}` : `${t.name}: no badges`;
-    }
+    };
 
     document.getElementById('badge-team-select')?.addEventListener('change', function() {
       const t = HB.getTeams().find(x => x.id === this.value);
-      if (t) updateBadgeButtons(t);
+      if (t) window.updateBadgeButtons(t);
     });
 
     // ─── ADMIN: ANNOUNCEMENTS ────────────────────────────────────
-    async function pushAnnouncement() {
+    window.pushAnnouncement = async function() {
       const inp = document.getElementById('announce-input');
       if (!inp.value.trim()) return;
       try {
-        await db.collection('event').doc('current').set({
+        await window.db.collection('event').doc('current').set({
           announcement: inp.value.trim().toUpperCase(),
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         inp.value = '';
       } catch (err) { console.error(err); }
-    }
+    };
 
     // ─── ADMIN: WINNER ───────────────────────────────────────────
-    async function announceWinner() {
+    window.announceWinner = async function() {
       const id = document.getElementById('winner-select').value;
       const t = HB.getTeams().find(x => x.id === id);
       if (!t) return;
       try {
-        await db.collection('event').doc('current').set({
+        await window.db.collection('event').doc('current').set({
           winner: t.name, winnerId: t.id, winnerColor: t.color,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch (err) { console.error(err); }
-    }
+    };
 
-    function closeWinnerFirestore() {
-      db.collection('event').doc('current').update({
+    window.closeWinnerFirestore = function() {
+      window.db.collection('event').doc('current').update({
         winner: '', winnerId: '', winnerColor: ''
       }).catch(() => {});
-    }
+    };
 
     // ─── ADMIN: PUSH TIMERS ──────────────────────────────────────
-    async function pushTimers() {
+    window.pushTimers = async function() {
       const btn = event.target; btn.textContent = 'SETTING...'; btn.disabled = true;
       try {
-        await db.collection('event').doc('current').set({
+        await window.db.collection('event').doc('current').set({
           r1Start: document.getElementById('r1-start').value,
           r1End: document.getElementById('r1-end').value,
           r2Start: document.getElementById('r2-start').value,
@@ -492,23 +496,40 @@
         btn.textContent = 'ERROR!'; btn.style.background = '#b01c2c';
       }
       setTimeout(() => { btn.textContent = 'SET ROUND TIMERS'; btn.style.background = ''; btn.disabled = false; }, 1500);
-    }
+    };
+
+    window.stopTimers = async function() {
+      try {
+        await window.db.collection('event').doc('current').update({
+          r1Start: '', r1End: '', r2Start: '', r2End: ''
+        });
+        document.getElementById('r1-start').value = '';
+        document.getElementById('r1-end').value = '';
+        document.getElementById('r2-start').value = '';
+        document.getElementById('r2-end').value = '';
+      } catch (e) { console.error(e); }
+    };
+
+    window.resetTimers = async function() {
+      if(!confirm('Clear all timers?')) return;
+      window.stopTimers();
+    };
 
     // ─── VIEW SWITCH ─────────────────────────────────────────────
-    function switchView(v) {
+    window.switchView = function(v) {
       document.getElementById('participant-view').classList.toggle('hidden', v === 'admin');
       document.getElementById('admin-view').classList.toggle('visible', v === 'admin');
       document.getElementById('btn-participant-view').classList.toggle('active', v === 'participant');
       document.getElementById('btn-admin-view').classList.toggle('active', v === 'admin');
-      if (v === 'admin') buildScoreTable();
-    }
+      if (v === 'admin') window.buildScoreTable();
+    };
 
-    function handleUrlParams() {
+    window.handleUrlParams = function() {
       const params = new URLSearchParams(window.location.search);
       const view = params.get('view');
-      if (view === 'participant') switchView('participant');
-      else switchView('admin');
-    }
+      if (view === 'participant') window.switchView('participant');
+      else window.switchView('admin');
+    };
   </script>
 </body>
 </html>

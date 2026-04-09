@@ -42,6 +42,8 @@ window.HB = window.HB || {};
   let isFirstEventCallback = true;
   let roundTimers = { r1Start: '', r1End: '', r2Start: '', r2End: '' };
   let timerInterval = null;
+  let unsubscribeTeams = null;
+  let unsubscribeEvent = null;
 
   // Charts (managed internally, updated not recreated)
   let barChart = null, pieChart = null, radarChart = null;
@@ -68,7 +70,7 @@ window.HB = window.HB || {};
     return new Promise((resolve, reject) => {
       let resolved = false;
 
-      auth.onAuthStateChanged(user => {
+      window.auth.onAuthStateChanged(user => {
         if (resolved) return;
         resolved = true;
 
@@ -108,7 +110,7 @@ window.HB = window.HB || {};
   };
 
   HB.signOut = function() {
-    auth.signOut().then(() => { window.location.href = 'login.html'; });
+    window.auth.signOut().then(() => { window.location.href = 'login.html'; });
   };
 
   // ─── HELPERS ────────────────────────────────────────────────────
@@ -138,11 +140,11 @@ window.HB = window.HB || {};
 
   // ─── SEED DATA ──────────────────────────────────────────────────
   HB.seedIfEmpty = async function() {
-    const snap = await db.collection('teams').limit(1).get();
+    const snap = await window.db.collection('teams').limit(1).get();
     if (snap.empty) {
-      const batch = db.batch();
-      SEED_TEAMS.forEach(team => { batch.set(db.collection('teams').doc(), team); });
-      batch.set(db.collection('event').doc('current'), {
+      const batch = window.db.batch();
+      SEED_TEAMS.forEach(team => { batch.set(window.db.collection('teams').doc(), team); });
+      batch.set(window.db.collection('event').doc('current'), {
         winner: '', winnerId: '', winnerColor: '',
         announcement: 'HACKATHON IS LIVE — TEAMS COMPETING',
         multiplier: 1, multiplierName: '',
@@ -155,11 +157,25 @@ window.HB = window.HB || {};
 
   // ─── FIRESTORE LISTENERS ────────────────────────────────────────
   // Options: { onTeamsUpdate, onEventUpdate, isAdmin }
+  HB.stopListeners = function() {
+    if (typeof unsubscribeTeams === 'function') {
+      try { unsubscribeTeams(); } catch (_) {}
+    }
+    if (typeof unsubscribeEvent === 'function') {
+      try { unsubscribeEvent(); } catch (_) {}
+    }
+    unsubscribeTeams = null;
+    unsubscribeEvent = null;
+  };
+
   HB.startListeners = function(callbacks = {}) {
     const { onTeamsUpdate, onEventUpdate, isAdmin = false } = callbacks;
+    // Ensure idempotent startup: avoid duplicate realtime subscriptions.
+    HB.stopListeners();
+    isFirstEventCallback = true;
 
     // Teams listener
-    db.collection('teams').onSnapshot(snapshot => {
+    unsubscribeTeams = window.db.collection('teams').onSnapshot(snapshot => {
       teams = [];
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -192,7 +208,7 @@ window.HB = window.HB || {};
     }, err => console.error('Teams listener error:', err));
 
     // Event listener
-    db.collection('event').doc('current').onSnapshot(doc => {
+    unsubscribeEvent = window.db.collection('event').doc('current').onSnapshot(doc => {
       if (!doc.exists) return;
       const data = doc.data();
 
@@ -500,7 +516,7 @@ window.HB = window.HB || {};
   // ─── VOTING ─────────────────────────────────────────────────────
   HB.voteForTeam = async function(teamId) {
     try {
-      await db.collection('teams').doc(teamId).update({
+      await window.db.collection('teams').doc(teamId).update({
         votes: firebase.firestore.FieldValue.increment(1)
       });
     } catch (err) { console.error('Vote error:', err); }
