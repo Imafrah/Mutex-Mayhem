@@ -150,6 +150,20 @@ window.HB = window.HB || {};
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
+  HB.getActiveScore = function(t, isForAdmin = false) {
+    if (showTotal || isForAdmin) return HB.totalScore(t);
+    if (showR2) return t.round2 || 0;
+    if (showR1) return t.round1 || 0;
+    return null;
+  };
+
+  HB.getActiveScoreLabel = function(isForAdmin = false) {
+    if (showTotal || isForAdmin) return 'TOTAL PTS';
+    if (showR2) return 'ROUND 2 PTS';
+    if (showR1) return 'ROUND 1 PTS';
+    return '---';
+  };
+
   // ─── SEED DATA ──────────────────────────────────────────────────
   HB.seedIfEmpty = async function() {
     const snap = await window.db.collection('teams').limit(1).get();
@@ -331,7 +345,8 @@ window.HB = window.HB || {};
         >♥</button>`;
       }
 
-      const scoreValue = (showTotal || isAdmin) ? score : '---';
+      const activeScore = HB.getActiveScore(t, isAdmin);
+      const scoreValue = activeScore !== null ? activeScore : '---';
 
       item.innerHTML = `
         <div class="track-rank ${rankClass}">${rank === 1 ? '♛' : rank === 2 ? '♜' : rank === 3 ? '♝' : rank}</div>
@@ -376,11 +391,21 @@ window.HB = window.HB || {};
 
     // Update hero section
     const setTextById = (id, text) => { const e = document.getElementById(id); if (e) e.textContent = text; };
+    const setHtmlById = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+
+    const activeScore = HB.getActiveScore(t, internalIsAdmin);
+    const scoreValue = activeScore !== null ? activeScore : '---';
+    const scoreLabel = HB.getActiveScoreLabel(internalIsAdmin);
+
     setTextById('np-team', t.name);
     setTextById('np-project', t.project);
-    setTextById('np-score', (showTotal || internalIsAdmin) ? score : '---');
+    setTextById('np-score', scoreValue);
     setTextById('np-bpm', t.bpm.toFixed(0));
     setTextById('np-rank', t.genre);
+
+    // Update label in hero section
+    const labelEl = document.querySelector('.np-stat-label');
+    if (labelEl && labelEl.innerText.includes('PTS')) labelEl.textContent = scoreLabel;
 
     // Big vinyl
     const bv = document.getElementById('big-vinyl');
@@ -394,13 +419,15 @@ window.HB = window.HB || {};
     // Score bar and stat block
     const bar = document.getElementById('np-bar');
     const scoreStat = document.querySelector('.np-stat'); // Total PTS block
+    const isVisible = (showTotal || showR1 || showR2 || internalIsAdmin);
+
     if (bar) {
       bar.style.width = (score / max * 100) + '%';
       bar.style.background = t.color;
-      bar.parentElement.style.display = (showTotal || internalIsAdmin) ? 'block' : 'none';
+      bar.parentElement.style.display = isVisible ? 'block' : 'none';
     }
-    if (scoreStat && scoreStat.innerText.includes('TOTAL PTS')) {
-       scoreStat.style.display = (showTotal || internalIsAdmin) ? 'block' : 'none';
+    if (scoreStat && (scoreStat.innerText.includes('PTS') || scoreStat.querySelector('.np-stat-label')?.innerText.includes('PTS'))) {
+       scoreStat.style.display = isVisible ? 'block' : 'none';
     }
 
     // Badges
@@ -440,14 +467,16 @@ window.HB = window.HB || {};
     if (!teams.length) return;
     const s = HB.sorted();
     const labels = s.map(t => t.name);
-    const data = s.map(t => HB.totalScore(t));
+    const data = s.map(t => HB.getActiveScore(t, internalIsAdmin) || 0);
     const colors = s.map(t => t.color);
 
     const barCanvas = document.getElementById('bar-chart');
     const pieCanvas = document.getElementById('pie-chart');
 
-    // Hide charts if Total Points is hidden
-    if (!showTotal && !internalIsAdmin) {
+    // Hide charts if NO scores are visible
+    const isVisible = (showTotal || showR1 || showR2 || internalIsAdmin);
+
+    if (!isVisible) {
       if (barCanvas && barCanvas.parentElement.parentElement) barCanvas.parentElement.parentElement.style.display = 'none';
       if (pieCanvas && pieCanvas.parentElement.parentElement) pieCanvas.parentElement.parentElement.style.display = 'none';
       return;
