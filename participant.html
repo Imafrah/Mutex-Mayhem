@@ -180,21 +180,25 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="shared/app-core.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="shared/app-core.js"></script>
 
   <script>
     // ─── AUTH + INIT ──────────────────────────────────────────────
-    HB.initAuthGuard({ requireAdmin: false, appElementId: 'main-app' })
-      .then(() => {
-        HB.startListeners({
-          isAdmin: false,
-          onTeamsUpdate: () => { HB.renderH2H(); }
-        });
-        HB.updateMarquee();
-        HB.startClock();
-      })
-      .catch(err => console.log('Auth guard:', err.message));
+    // Wrapped in DOMContentLoaded to ensure firebase-config.js and
+    // app-core.js (which are deferred by Vite/Vercel) are loaded first.
+    window.addEventListener('DOMContentLoaded', function() {
+      HB.initAuthGuard({ requireAdmin: false, appElementId: 'main-app' })
+        .then(() => {
+          HB.startListeners({
+            isAdmin: false,
+            onTeamsUpdate: () => { HB.renderH2H(); }
+          });
+          HB.updateMarquee();
+          HB.startClock();
+        })
+        .catch(err => console.log('Auth guard:', err.message));
+    });
   </script>
 </body>
 </html>

@@ -265,10 +265,14 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="shared/app-core.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="shared/app-core.js"></script>
 
   <script>
+    // Wrapped in DOMContentLoaded so deferred scripts (firebase-config.js,
+    // app-core.js) are fully executed before HB is accessed.
+    window.addEventListener('DOMContentLoaded', function() {
+
     // ─── ADMIN-ONLY AUTH + INIT ───────────────────────────────────
     HB.initAuthGuard({ requireAdmin: true, appElementId: 'main-app' })
       .then(() => {
@@ -504,6 +508,8 @@
       if (view === 'participant') switchView('participant');
       else switchView('admin');
     }
+
+    }); // end DOMContentLoaded
   </script>
 </body>
 </html>
