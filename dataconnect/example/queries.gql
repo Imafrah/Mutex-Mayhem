@@ -1,0 +1,50 @@
+query ListAllHackathons @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  hackathons {
+    id
+    name
+    startDate
+    endDate
+    theme
+  }
+}
+
+query GetUserTeamAndProjects($userId: UUID!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  user(id: $userId) {
+    displayName
+    email
+    teams_via_TeamMember {
+      id
+      name
+      hackathon {
+        name
+      }
+      projects_on_team {
+        id
+        name
+        description
+        submittedAt
+      }
+    }
+  }
+}
+
+mutation CreateNewProject($teamId: UUID!, $hackathonId: UUID!, $name: String!, $description: String, $projectLink: String, $githubLink: String) @auth(level: USER) {
+  project_insert(data: {
+    teamId: $teamId,
+    hackathonId: $hackathonId,
+    name: $name,
+    submittedAt_expr: "request.time",
+    description: $description,
+    projectLink: $projectLink,
+    githubLink: $githubLink
+  })
+}
+
+mutation PostAnnouncement($hackathonId: UUID!, $message: String!) @auth(expr: "auth.token.admin == true") {
+  announcement_insert(data: {
+    hackathonId: $hackathonId,
+    userId_expr: "auth.uid",
+    message: $message,
+    createdAt_expr: "request.time"
+  })
+}

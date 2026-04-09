@@ -1,0 +1,95 @@
+mutation SeedData @transaction @auth(level: USER, insecureReason: "Seed data operations are only accessible to authenticated users.") {
+  user1: user_insert(data: {
+    id: "756a161b-9076-47a3-8646-c22f0367ed9d",
+    displayName: "Alice Smith",
+    email: "alice.smith@example.com",
+    role: "participant",
+    createdAt: "2024-01-01T10:00:00Z"
+  })
+  user2: user_insert(data: {
+    id: "a3a1f2c4-279c-4e89-8d8a-8b8b8b8b8b8b",
+    displayName: "Bob Johnson",
+    email: "bob.johnson@example.com",
+    role: "organizer",
+    createdAt: "2024-01-02T11:00:00Z"
+  })
+  hackathon1: hackathon_insert(data: {
+    id: "b4c2e1d7-f8a9-4b6c-8e3d-1a2b3c4d5e6f",
+    name: "AI Innovations Hackathon",
+    startDate: "2024-03-01T09:00:00Z",
+    endDate: "2024-03-03T17:00:00Z",
+    theme: "Artificial Intelligence",
+    description: "A hackathon focused on developing innovative AI solutions.",
+    rules: "Teams of 1-4, projects must be open-source.",
+    createdAt: "2024-01-15T12:00:00Z"
+  })
+  hackathon2: hackathon_insert(data: {
+    id: "f9e7d6c5-a4b3-2c1d-0e9f-8a7b6c5d4e3f",
+    name: "Web3 World Builders",
+    startDate: "2024-04-10T09:00:00Z",
+    endDate: "2024-04-12T17:00:00Z",
+    theme: "Decentralized Applications",
+    description: "Exploring the future of web with blockchain and dApps.",
+    rules: "Teams of 1-4, projects must use at least one Web3 technology.",
+    createdAt: "2024-02-01T10:00:00Z"
+  })
+  team1: team_insert(data: {
+    id: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+    hackathonId: "b4c2e1d7-f8a9-4b6c-8e3d-1a2b3c4d5e6f",
+    name: "Neural Nexus",
+    description: "Developing a new neural network architecture.",
+    createdAt: "2024-02-20T14:00:00Z"
+  })
+  team2: team_insert(data: {
+    id: "e0f1g2h3-i4j5-k6l7-m8n9-o0p1q2r3s4t5",
+    hackathonId: "f9e7d6c5-a4b3-2c1d-0e9f-8a7b6c5d4e3f",
+    name: "BlockBuilders",
+    description: "Creating a decentralized social media platform.",
+    createdAt: "2024-03-15T16:00:00Z"
+  })
+  teamMember1: teamMember_insert(data: {
+    userId: "756a161b-9076-47a3-8646-c22f0367ed9d",
+    teamId: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+    joinedAt: "2024-02-21T09:00:00Z"
+  })
+  teamMember2: teamMember_insert(data: {
+    userId: "a3a1f2c4-279c-4e89-8d8a-8b8b8b8b8b8b",
+    teamId: "e0f1g2h3-i4j5-k6l7-m8n9-o0p1q2r3s4t5",
+    joinedAt: "2024-03-16T10:00:00Z"
+  })
+  project1: project_insert(data: {
+    id: "d9c8b7a6-e5f4-3d2c-1b0a-9f8e7d6c5b4a",
+    teamId: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+    hackathonId: "b4c2e1d7-f8a9-4b6c-8e3d-1a2b3c4d5e6f",
+    name: "DeepDream Generator",
+    description: "An AI-powered image generation tool.",
+    projectLink: "https://deepdream.example.com",
+    githubLink: "https://github.com/neuralnexus/deepdream",
+    submittedAt: "2024-03-03T15:00:00Z"
+  })
+  project2: project_insert(data: {
+    id: "0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+    teamId: "e0f1g2h3-i4j5-k6l7-m8n9-o0p1q2r3s4t5",
+    hackathonId: "f9e7d6c5-a4b3-2c1d-0e9f-8a7b6c5d4e3f",
+    name: "Decentralized Blog",
+    description: "A blogging platform built on a blockchain.",
+    projectLink: "https://deblog.example.com",
+    githubLink: "https://github.com/blockbuilders/deblog",
+    submittedAt: "2024-04-12T16:00:00Z"
+  })
+  score1: score_insert(data: {
+    id: "12345678-1234-5678-1234-567812345678",
+    projectId: "d9c8b7a6-e5f4-3d2c-1b0a-9f8e7d6c5b4a",
+    userId: "a3a1f2c4-279c-4e89-8d8a-8b8b8b8b8b8b",
+    score: 95,
+    feedback: "Excellent creativity and execution!",
+    createdAt: "2024-03-03T18:00:00Z"
+  })
+  announcement1: announcement_insert(data: {
+    id: "f2c4a3a1-279c-4e89-8d8a-8b8b8b8b8b8b",
+    hackathonId: "b4c2e1d7-f8a9-4b6c-8e3d-1a2b3c4d5e6f",
+    userId: "a3a1f2c4-279c-4e89-8d8a-8b8b8b8b8b8b",
+    message: "Welcome to the AI Innovations Hackathon! Good luck to all participants!",
+    createdAt: "2024-03-01T08:00:00Z"
+  })
+}

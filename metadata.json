@@ -1,0 +1,5 @@
+{
+  "name": "CSE2 Hackathon Leaderboard",
+  "description": "A music-themed hackathon leaderboard with admin and participant views, featuring vinyl record aesthetics and real-time updates via localStorage.",
+  "requestFramePermissions": []
+}
