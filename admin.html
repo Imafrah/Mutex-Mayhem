@@ -329,8 +329,8 @@
         teams.forEach(t => {
           html += `<tr data-team-id="${t.id}">
             <td style="font-weight:500;color:${t.color}">${t.name}</td>
-            <td><input class="score-input" id="r1-${t.id}" type="number" min="0" max="500" value="${t.round1}"></td>
-            <td><input class="score-input" id="r2-${t.id}" type="number" min="0" max="500" value="${t.round2}"></td>
+            <td><input class="score-input" id="r1-${t.id}" type="number" min="0" max="500" value="${t.round1}" oninput="this.dataset.dirty='true'; window.updateLocalTotal('${t.id}')"></td>
+            <td><input class="score-input" id="r2-${t.id}" type="number" min="0" max="500" value="${t.round2}" oninput="this.dataset.dirty='true'; window.updateLocalTotal('${t.id}')"></td>
             <td class="total-cell" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--cream)">${HB.totalScore(t)}</td>
             <td><button onclick="window.deleteTeam('${t.id}')" style="background:none;border:1px solid var(--gray3);color:var(--red);padding:2px 8px;border-radius:3px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px">✕</button></td>
           </tr>`;
@@ -344,18 +344,31 @@
           const row = tb.querySelector(`tr[data-team-id="${t.id}"]`);
           if (!row) return;
 
-          // Only update input values if they're not currently focused
-          if (r1Input && document.activeElement !== r1Input) {
+          // Only update input values if they're not currently focused and not dirty (edited by admin)
+          if (r1Input && document.activeElement !== r1Input && r1Input.dataset.dirty !== 'true') {
             r1Input.value = t.round1;
           }
-          if (r2Input && document.activeElement !== r2Input) {
+          if (r2Input && document.activeElement !== r2Input && r2Input.dataset.dirty !== 'true') {
             r2Input.value = t.round2;
           }
 
-          // Always update total
-          const totalCell = row.querySelector('.total-cell');
-          if (totalCell) totalCell.textContent = HB.totalScore(t);
+          // Always update total, UNLESS it's actively unsaved
+          if ((!r1Input || r1Input.dataset.dirty !== 'true') && (!r2Input || r2Input.dataset.dirty !== 'true')) {
+            const totalCell = row.querySelector('.total-cell');
+            if (totalCell) totalCell.textContent = HB.totalScore(t);
+          }
         });
+      }
+    };
+
+    window.updateLocalTotal = function(teamId) {
+      const r1 = parseFloat(document.getElementById(`r1-${teamId}`)?.value) || 0;
+      const r2 = parseFloat(document.getElementById(`r2-${teamId}`)?.value) || 0;
+      const total = Math.round((r1 + r2) * HB.getMultiplier());
+      const row = document.querySelector(`tr[data-team-id="${teamId}"]`);
+      if (row) {
+        const totalCell = row.querySelector('.total-cell');
+        if (totalCell) totalCell.textContent = total;
       }
     };
 
@@ -367,8 +380,13 @@
         const teams = HB.getTeams();
         const batch = window.db.batch();
         teams.forEach(t => {
-          const r1 = parseFloat(document.getElementById(`r1-${t.id}`)?.value) || 0;
-          const r2 = parseFloat(document.getElementById(`r2-${t.id}`)?.value) || 0;
+          const r1Input = document.getElementById(`r1-${t.id}`);
+          const r2Input = document.getElementById(`r2-${t.id}`);
+          if (r1Input) r1Input.dataset.dirty = 'false';
+          if (r2Input) r2Input.dataset.dirty = 'false';
+
+          const r1 = parseFloat(r1Input?.value) || 0;
+          const r2 = parseFloat(r2Input?.value) || 0;
           const total = Math.round((r1 + r2) * HB.getMultiplier());
           const newBpm = 60 + ((r1 + r2) * 0.3);
           batch.update(window.db.collection('teams').doc(t.id), { round1: r1, round2: r2, score: total, bpm: newBpm });
