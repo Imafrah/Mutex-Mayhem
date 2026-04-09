@@ -249,9 +249,9 @@ window.HB = window.HB || {};
       }
 
       // Sync visibility
-      if (data.showR1 !== undefined) showR1 = data.showR1;
-      if (data.showR2 !== undefined) showR2 = data.showR2;
-      if (data.showTotal !== undefined) showTotal = data.showTotal;
+      if (data.showR1 !== undefined) showR1 = !!data.showR1;
+      if (data.showR2 !== undefined) showR2 = !!data.showR2;
+      if (data.showTotal !== undefined) showTotal = !!data.showTotal;
 
       // Re-render with potentially new visibility
       triggerRender();

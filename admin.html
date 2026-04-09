@@ -224,7 +224,7 @@
                 <input type="checkbox" id="show-total-chk" checked> SHOW TOTAL POINTS & CHARTS
               </label>
             </div>
-            <button class="btn-push" onclick="window.pushVisibility()" style="margin-top:0">UPDATE VISIBILITY</button>
+            <button class="btn-push" onclick="window.pushVisibility(event)" style="margin-top:0">UPDATE VISIBILITY</button>
           </div>
 
           <!-- BADGES -->
@@ -325,9 +325,11 @@
               const r1Chk = document.getElementById('show-r1-chk');
               const r2Chk = document.getElementById('show-r2-chk');
               const totalChk = document.getElementById('show-total-chk');
-              if (r1Chk && data.showR1 !== undefined) r1Chk.checked = data.showR1;
-              if (r2Chk && data.showR2 !== undefined) r2Chk.checked = data.showR2;
-              if (totalChk && data.showTotal !== undefined) totalChk.checked = data.showTotal;
+              
+              // Only update if not currently being interacted with (optional, but safer)
+              if (r1Chk && data.showR1 !== undefined && document.activeElement !== r1Chk) r1Chk.checked = data.showR1;
+              if (r2Chk && data.showR2 !== undefined && document.activeElement !== r2Chk) r2Chk.checked = data.showR2;
+              if (totalChk && data.showTotal !== undefined && document.activeElement !== totalChk) totalChk.checked = data.showTotal;
             }
           });
         });
@@ -470,8 +472,11 @@
     };
 
     // ─── ADMIN: VISIBILITY ───────────────────────────────────────
-    window.pushVisibility = async function() {
-      const btn = event.target; 
+    window.pushVisibility = async function(ev) {
+      if (ev) ev.preventDefault();
+      const btn = ev?.target || event?.target || this;
+      if (!btn) return;
+      
       const origText = btn.textContent;
       btn.textContent = 'UPDATING...'; 
       btn.disabled = true;
