@@ -302,6 +302,7 @@
         handleUrlParams();
       })
       .catch(err => console.log('Auth guard:', err.message));
+    }); // end DOMContentLoaded
 
     // ─── ADMIN: SCORE TABLE ──────────────────────────────────────
     function buildScoreTable() {
@@ -508,8 +509,6 @@
       if (view === 'participant') switchView('participant');
       else switchView('admin');
     }
-
-    }); // end DOMContentLoaded
   </script>
 </body>
 </html>
