@@ -208,6 +208,25 @@
             </div>
           </div>
 
+          <!-- SCORE VISIBILITY CONTROLS -->
+          <div class="admin-card">
+            <div class="admin-card-title">SCORE VISIBILITY (AUDIENCE VIEW)</div>
+            <div class="multiplier-row" style="margin-bottom:8px">
+              <label style="color:var(--cream);font-family:'Space Mono',monospace;font-size:11px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="show-r1-chk" checked> SHOW ROUND 1
+              </label>
+              <label style="color:var(--cream);font-family:'Space Mono',monospace;font-size:11px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="show-r2-chk" checked> SHOW ROUND 2
+              </label>
+            </div>
+            <div class="multiplier-row" style="margin-bottom:16px">
+              <label style="color:var(--cream);font-family:'Space Mono',monospace;font-size:11px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="show-total-chk" checked> SHOW TOTAL POINTS & CHARTS
+              </label>
+            </div>
+            <button class="btn-push" onclick="window.pushVisibility()" style="margin-top:0">UPDATE VISIBILITY</button>
+          </div>
+
           <!-- BADGES -->
           <div class="admin-card">
             <div class="admin-card-title">ACHIEVEMENT BADGES</div>
@@ -301,6 +320,14 @@
                 const inp = document.getElementById(id);
                 if (inp && !inp.value && val) inp.value = val;
               });
+
+              // Apply visibility values to checkboxes
+              const r1Chk = document.getElementById('show-r1-chk');
+              const r2Chk = document.getElementById('show-r2-chk');
+              const totalChk = document.getElementById('show-total-chk');
+              if (r1Chk && data.showR1 !== undefined) r1Chk.checked = data.showR1;
+              if (r2Chk && data.showR2 !== undefined) r2Chk.checked = data.showR2;
+              if (totalChk && data.showTotal !== undefined) totalChk.checked = data.showTotal;
             }
           });
         });
@@ -440,6 +467,29 @@
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       } catch (err) { console.error(err); }
+    };
+
+    // ─── ADMIN: VISIBILITY ───────────────────────────────────────
+    window.pushVisibility = async function() {
+      const btn = event.target; 
+      const origText = btn.textContent;
+      btn.textContent = 'UPDATING...'; 
+      btn.disabled = true;
+      try {
+        await window.db.collection('event').doc('current').set({
+          showR1: document.getElementById('show-r1-chk').checked,
+          showR2: document.getElementById('show-r2-chk').checked,
+          showTotal: document.getElementById('show-total-chk').checked,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        btn.textContent = 'UPDATED!'; 
+        btn.style.background = '#1D9E75';
+      } catch (err) { 
+        console.error('Visibility update error:', err); 
+        btn.textContent = 'ERROR!'; 
+        btn.style.background = '#b01c2c';
+      }
+      setTimeout(() => { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }, 1500);
     };
 
     // ─── ADMIN: BADGES ───────────────────────────────────────────

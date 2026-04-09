@@ -41,6 +41,8 @@ window.HB = window.HB || {};
   let lastMultiplierTimestamp = null;
   let isFirstEventCallback = true;
   let roundTimers = { r1Start: '', r1End: '', r2Start: '', r2End: '' };
+  let showR1 = true, showR2 = true, showTotal = true;
+  let internalIsAdmin = false;
   let timerInterval = null;
   let unsubscribeTeams = null;
   let unsubscribeEvent = null;
@@ -123,7 +125,17 @@ window.HB = window.HB || {};
   };
 
   HB.sorted = function() {
-    return [...teams].sort((a, b) => HB.totalScore(b) - HB.totalScore(a));
+    return [...teams].sort((a, b) => {
+      // Dynamic sorting based on what is currently shown to the audience
+      if (showTotal) {
+        return HB.totalScore(b) - HB.totalScore(a);
+      } else if (showR2) {
+        return (b.round2 || 0) - (a.round2 || 0);
+      } else if (showR1) {
+        return (b.round1 || 0) - (a.round1 || 0);
+      }
+      return a.name.localeCompare(b.name);
+    });
   };
 
   HB.getInitials = function(name) {
@@ -170,6 +182,7 @@ window.HB = window.HB || {};
 
   HB.startListeners = function(callbacks = {}) {
     const { onTeamsUpdate, onEventUpdate, isAdmin = false } = callbacks;
+    internalIsAdmin = isAdmin;
     // Ensure idempotent startup: avoid duplicate realtime subscriptions.
     HB.stopListeners();
     isFirstEventCallback = true;
@@ -196,15 +209,9 @@ window.HB = window.HB || {};
         });
       });
 
-      // Debounced rendering
-      if (renderFrame) cancelAnimationFrame(renderFrame);
-      renderFrame = requestAnimationFrame(() => {
-        HB.renderTracklist(isAdmin);
-        HB.setNowPlaying(currentNowPlayingId);
-        HB.updateCharts();
-        HB.populateSelects(isAdmin);
-        if (onTeamsUpdate) onTeamsUpdate(teams);
-      });
+      // Sort logic might depend on visibility, so we render after event listener potentially updates visibility
+      // But we always render on team updates too.
+      triggerRender();
     }, err => console.error('Teams listener error:', err));
 
     // Event listener
@@ -225,15 +232,15 @@ window.HB = window.HB || {};
         }
 
         if (data.timestamp) lastMultiplierTimestamp = data.timestamp.toMillis();
-
-        // Re-render with new multiplier
-        if (renderFrame) cancelAnimationFrame(renderFrame);
-        renderFrame = requestAnimationFrame(() => {
-          HB.renderTracklist(isAdmin);
-          HB.setNowPlaying(currentNowPlayingId);
-          HB.updateCharts();
-        });
       }
+
+      // Sync visibility
+      if (data.showR1 !== undefined) showR1 = data.showR1;
+      if (data.showR2 !== undefined) showR2 = data.showR2;
+      if (data.showTotal !== undefined) showTotal = data.showTotal;
+
+      // Re-render with potentially new visibility
+      triggerRender();
 
       // Announcement
       if (data.announcement) {
@@ -264,6 +271,17 @@ window.HB = window.HB || {};
 
       if (onEventUpdate) onEventUpdate(data);
     }, err => console.error('Event listener error:', err));
+
+    function triggerRender() {
+      if (renderFrame) cancelAnimationFrame(renderFrame);
+      renderFrame = requestAnimationFrame(() => {
+        HB.renderTracklist(internalIsAdmin);
+        HB.setNowPlaying(currentNowPlayingId);
+        HB.updateCharts();
+        HB.populateSelects(internalIsAdmin);
+        if (onTeamsUpdate) onTeamsUpdate(teams);
+      });
+    }
   };
 
   // ─── POPULATE SELECTS ───────────────────────────────────────────
@@ -313,6 +331,8 @@ window.HB = window.HB || {};
         >♥</button>`;
       }
 
+      const scoreValue = (showTotal || isAdmin) ? score : '---';
+
       item.innerHTML = `
         <div class="track-rank ${rankClass}">${rank === 1 ? '♛' : rank === 2 ? '♜' : rank === 3 ? '♝' : rank}</div>
         <div class="track-vinyl">
@@ -325,7 +345,7 @@ window.HB = window.HB || {};
           <div class="track-genre">${t.genre}</div>
         </div>
         <div>
-          <div class="track-score ticking" id="ts-${t.id}">${score}</div>
+          <div class="track-score ticking" id="ts-${t.id}">${scoreValue}</div>
           <div class="track-bpm">${isAdmin ? t.bpm.toFixed(0) + ' BPM' : (t.votes || 0) + ' VOTES'}</div>
         </div>
         ${voteBtn}`;
@@ -358,7 +378,7 @@ window.HB = window.HB || {};
     const setTextById = (id, text) => { const e = document.getElementById(id); if (e) e.textContent = text; };
     setTextById('np-team', t.name);
     setTextById('np-project', t.project);
-    setTextById('np-score', score);
+    setTextById('np-score', (showTotal || internalIsAdmin) ? score : '---');
     setTextById('np-bpm', t.bpm.toFixed(0));
     setTextById('np-rank', t.genre);
 
@@ -371,11 +391,16 @@ window.HB = window.HB || {};
     const vl = document.getElementById('vinyl-label');
     if (vl) { vl.style.background = t.color; vl.textContent = init; }
 
-    // Score bar
+    // Score bar and stat block
     const bar = document.getElementById('np-bar');
+    const scoreStat = document.querySelector('.np-stat'); // Total PTS block
     if (bar) {
       bar.style.width = (score / max * 100) + '%';
       bar.style.background = t.color;
+      bar.parentElement.style.display = (showTotal || internalIsAdmin) ? 'block' : 'none';
+    }
+    if (scoreStat && scoreStat.innerText.includes('TOTAL PTS')) {
+       scoreStat.style.display = (showTotal || internalIsAdmin) ? 'block' : 'none';
     }
 
     // Badges
@@ -389,7 +414,10 @@ window.HB = window.HB || {};
     // Round breakdown (judge panel) if present
     const jr = document.getElementById('judge-rows');
     if (jr) {
-      const roundData = [{ label: 'ROUND 1', val: t.round1 }, { label: 'ROUND 2', val: t.round2 }];
+      const roundData = [];
+      if (showR1 || internalIsAdmin) roundData.push({ label: 'ROUND 1', val: t.round1 });
+      if (showR2 || internalIsAdmin) roundData.push({ label: 'ROUND 2', val: t.round2 });
+
       const maxRound = Math.max(t.round1, t.round2, 1);
       jr.innerHTML = roundData.map(r => `
         <div class="judge-row">
@@ -417,6 +445,16 @@ window.HB = window.HB || {};
 
     const barCanvas = document.getElementById('bar-chart');
     const pieCanvas = document.getElementById('pie-chart');
+
+    // Hide charts if Total Points is hidden
+    if (!showTotal && !internalIsAdmin) {
+      if (barCanvas && barCanvas.parentElement.parentElement) barCanvas.parentElement.parentElement.style.display = 'none';
+      if (pieCanvas && pieCanvas.parentElement.parentElement) pieCanvas.parentElement.parentElement.style.display = 'none';
+      return;
+    } else {
+      if (barCanvas && barCanvas.parentElement.parentElement) barCanvas.parentElement.parentElement.style.display = 'block';
+      if (pieCanvas && pieCanvas.parentElement.parentElement) pieCanvas.parentElement.parentElement.style.display = 'block';
+    }
 
     // If team count changed, must rebuild; otherwise just update data
     if (teams.length !== lastTeamCount) {
